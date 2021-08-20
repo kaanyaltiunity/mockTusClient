@@ -18,6 +18,7 @@ const xUserType = "USER"
 const cdsBaseURL = "http://localhost:22080/api/v1"
 // const cdsBaseURL = "https://content-api-stg.cloud.unity3d.com/api/v1"
 const baseUrl = cdsBaseURL
+console.log("API_TOKEN", process.env.API_KEY)
 const baseHeaders = {
     // "X-User-Type": xUserType,
     // "X-User": JSON.stringify(xUser),
