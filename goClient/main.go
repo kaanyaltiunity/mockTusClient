@@ -1,8 +1,8 @@
 package main
 
 import (
+	"contentWorkflow/utils"
 	"log"
-	"os"
 
 	"github.com/joho/godotenv"
 )
@@ -24,5 +24,21 @@ func main() {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	_, _ = contentClient.CreateBucket(os.Getenv("PROJECT_ID"))
+	bucketId, err := contentClient.CreateBucket()
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	content, err := utils.GenerateRandomContent(100)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	log.Printf("RANDOM GENERATED CONTENT\n%v\n\n", content)
+
+	entryId, err := contentClient.CreateEntry(bucketId, content)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	_ = contentClient.UploadContent(bucketId, entryId)
 }

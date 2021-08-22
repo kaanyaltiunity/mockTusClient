@@ -21,6 +21,6 @@ func NewBaseClient() BaseClient {
 }
 
 func (baseClient *BaseClient) SetAuth(authType string, authData string) {
-	log.Printf("SETTING AUTH \"%s\"\n\n", fmt.Sprintf("%s %s", authType, authData))
+	log.Printf("SETTING AUTH\n\"%s\"\n\n", fmt.Sprintf("%s %s", authType, authData))
 	baseClient.Auth = fmt.Sprintf("%s %s", authType, authData)
 }
