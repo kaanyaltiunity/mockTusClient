@@ -40,5 +40,5 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	_ = contentClient.UploadContent(bucketId, entryId)
+	contentClient.UploadContent(bucketId, entryId, content)
 }

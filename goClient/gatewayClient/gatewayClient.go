@@ -11,6 +11,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 
 	"github.com/google/uuid"
 )
@@ -138,9 +139,28 @@ func (gatewayClient *GatewayClient) CreateEntry(bucketId string, content *utils.
 
 	return unmarshalledResponseBody["entryid"].(string), nil
 }
-func (gatewayClient *GatewayClient) UploadContent(bucketId string, entryId string) error {
-	return nil
+func (gatewayClient *GatewayClient) UploadContent(bucketId string, entryId string, content *utils.Content) {
+	request, err := http.NewRequest("PATCH", fmt.Sprintf("%sprojects/%s/buckets/%s/entries/%s/content", stagingBaseUrl, gatewayClient.projectId, bucketId, entryId), bytes.NewBuffer(content.Bytes))
+	request.Header.Set("Content-Type", "application/offset+octet-stream")
+	request.Header.Set("Content-Length", strconv.FormatInt(int64(content.Size), 10))
+	request.Header.Set("Authorization", gatewayClient.Auth)
+	request.Header.Set("Upload-Offset", "0")
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	log.Printf("GATEWAY CONTENT UPLOAD HEADERS\n%v\n\n", request.Header)
+
+	response, err := gatewayClient.Do(request)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	defer response.Body.Close()
+
+	log.Printf("CONTENT UPLOAD RESPONSE STATUS\n%v\n\n", response.Status)
 }
+
 func (gatewayClient *GatewayClient) DeleteBucket(bucketId string) error {
 	return nil
 }
