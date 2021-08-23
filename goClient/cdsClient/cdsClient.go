@@ -1,4 +1,4 @@
-package gatewayClient
+package cdsClient
 
 import (
 	"bytes"
@@ -18,20 +18,20 @@ import (
 )
 
 var baseUrls map[string]string = map[string]string{
-	"staging": "https://staging.services.unity.com/api/ccd/management/v1/",
-	"dev":     "localhost:9000/api/ccd/management/v1/",
+	"staging": "staging",
+	"dev":     "dev",
 }
 
-type GatewayClient struct {
+type CdsClient struct {
 	baseUrl   string
 	projectId string
 	baseClient.BaseClient
 }
 
-func NewGatewayClient(projectId string) *GatewayClient {
-	log.Println("CREATING GATEWAY CLIENT\n")
+func NewCdsClient(projectId string) *CdsClient {
+	log.Println("CREATING CDS CLIENT\n")
 	base := baseClient.NewBaseClient()
-	client := GatewayClient{
+	client := CdsClient{
 		BaseClient: base,
 		baseUrl:    baseUrls[os.Getenv("ENV")],
 		projectId:  projectId,
@@ -40,12 +40,12 @@ func NewGatewayClient(projectId string) *GatewayClient {
 	return &client
 }
 
-func (gatewayClient *GatewayClient) CreateBucket() (string, error) {
+func (cdsClient *CdsClient) CreateBucket() (string, error) {
 	uuid := uuid.NewString()
 	payload := payloads.CreateBucket{
 		Description: "testDescription",
 		Name:        fmt.Sprintf("testBucket-%s", uuid),
-		ProjectGuid: gatewayClient.projectId,
+		ProjectGuid: cdsClient.projectId,
 	}
 
 	marshalledPayload, err := json.Marshal(payload)
@@ -53,18 +53,18 @@ func (gatewayClient *GatewayClient) CreateBucket() (string, error) {
 		log.Fatalln(err)
 	}
 
-	log.Printf("GATEWAY BUCKET CREATION MARSHALLED PAYLOAD\n%s\n\n", string(marshalledPayload))
+	log.Printf("CDS BUCKET CREATION MARSHALLED PAYLOAD\n%s\n\n", string(marshalledPayload))
 
-	request, err := http.NewRequest("POST", fmt.Sprintf("%sprojects/%s/buckets", gatewayClient.baseUrl, gatewayClient.projectId), bytes.NewBuffer(marshalledPayload))
+	request, err := http.NewRequest("POST", fmt.Sprintf("%sprojects/%s/buckets", cdsClient.baseUrl, cdsClient.projectId), bytes.NewBuffer(marshalledPayload))
 	request.Header.Set("Content-Type", "application/json")
-	request.Header.Set("Authorization", gatewayClient.Auth)
+	request.Header.Set("Authorization", cdsClient.Auth)
 
-	log.Printf("GATEWAY CREATE BUCKET HEADERS\n%v\n\n", request.Header)
+	log.Printf("CDS CREATE BUCKET HEADERS\n%v\n\n", request.Header)
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	response, err := gatewayClient.Do(request)
+	response, err := cdsClient.Do(request)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -89,7 +89,8 @@ func (gatewayClient *GatewayClient) CreateBucket() (string, error) {
 
 	return unmarshalledResponseBody["id"].(string), nil
 }
-func (gatewayClient *GatewayClient) CreateEntry(bucketId string, content *utils.Content) (string, error) {
+
+func (cdsClient *CdsClient) CreateEntry(bucketId string, content *utils.Content) (string, error) {
 	contentPath := fmt.Sprintf("test_entry_%s", utils.RandomString(10))
 	log.Printf("CONTENT PATH\n%s\n\n", contentPath)
 
@@ -107,16 +108,16 @@ func (gatewayClient *GatewayClient) CreateEntry(bucketId string, content *utils.
 
 	log.Printf("ENTRY CREATION MARSHALLED PAYLOAD\n%s\n\n", string(marshalledPayload))
 
-	request, err := http.NewRequest("POST", fmt.Sprintf("%sprojects/%s/buckets/%s/entries", gatewayClient.baseUrl, gatewayClient.projectId, bucketId), bytes.NewBuffer(marshalledPayload))
+	request, err := http.NewRequest("POST", fmt.Sprintf("%s/buckets/%s/entries", cdsClient.baseUrl, bucketId), bytes.NewBuffer(marshalledPayload))
 	request.Header.Set("Content-Type", "application/json")
-	request.Header.Set("Authorization", gatewayClient.Auth)
+	request.Header.Set("Authorization", cdsClient.Auth)
 
-	log.Printf("GATEWAY ENTRY CREATION HEADERS\n%v\n\n", request.Header)
+	log.Printf("CDS ENTRY CREATION HEADERS\n%v\n\n", request.Header)
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	response, err := gatewayClient.Do(request)
+	response, err := cdsClient.Do(request)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -141,19 +142,20 @@ func (gatewayClient *GatewayClient) CreateEntry(bucketId string, content *utils.
 
 	return unmarshalledResponseBody["entryid"].(string), nil
 }
-func (gatewayClient *GatewayClient) UploadContent(bucketId string, entryId string, content *utils.Content) {
-	request, err := http.NewRequest("PATCH", fmt.Sprintf("%sprojects/%s/buckets/%s/entries/%s/content", gatewayClient.baseUrl, gatewayClient.projectId, bucketId, entryId), bytes.NewBuffer(content.Bytes))
+
+func (cdsClient *CdsClient) UploadContent(bucketId string, entryId string, content *utils.Content) {
+	request, err := http.NewRequest("PATCH", fmt.Sprintf("%s/buckets/%s/entries/%s/content", cdsClient.baseUrl, bucketId, entryId), bytes.NewBuffer(content.Bytes))
 	request.Header.Set("Content-Type", "application/offset+octet-stream")
 	request.Header.Set("Content-Length", strconv.FormatInt(int64(content.Size), 10))
-	request.Header.Set("Authorization", gatewayClient.Auth)
+	request.Header.Set("Authorization", cdsClient.Auth)
 	request.Header.Set("Upload-Offset", "0")
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	log.Printf("GATEWAY CONTENT UPLOAD HEADERS\n%v\n\n", request.Header)
+	log.Printf("CDS CONTENT UPLOAD HEADERS\n%v\n\n", request.Header)
 
-	response, err := gatewayClient.Do(request)
+	response, err := cdsClient.Do(request)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -163,14 +165,14 @@ func (gatewayClient *GatewayClient) UploadContent(bucketId string, entryId strin
 	log.Printf("CONTENT UPLOAD RESPONSE STATUS\n%v\n\n", response.Status)
 }
 
-func (gatewayClient *GatewayClient) DeleteBucket(bucketId string) {
-	request, err := http.NewRequest("DELETE", fmt.Sprintf("%sprojects/%s/buckets/%s", gatewayClient.baseUrl, gatewayClient.projectId, bucketId), nil)
-	request.Header.Set("Authorization", gatewayClient.Auth)
+func (cdsClient *CdsClient) DeleteBucket(bucketId string) {
+	request, err := http.NewRequest("DELETE", fmt.Sprintf("%s/buckets/%s", cdsClient.baseUrl, bucketId), nil)
+	request.Header.Set("Authorization", cdsClient.Auth)
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	response, err := gatewayClient.Do(request)
+	response, err := cdsClient.Do(request)
 	if err != nil {
 		log.Fatalln(err)
 	}
