@@ -5,7 +5,6 @@ import (
 	"contentWorkflow/baseClient"
 	"contentWorkflow/payloads"
 	"contentWorkflow/utils"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -36,7 +35,7 @@ func NewGatewayClient(projectId string) *GatewayClient {
 		baseUrl:    baseUrls[os.Getenv("ENV")],
 		projectId:  projectId,
 	}
-	client.SetAuth("Basic ", fmt.Sprintf(":%s", base64.StdEncoding.EncodeToString([]byte(os.Getenv("BEARER_TOKEN")))))
+	client.SetAuth("Bearer", os.Getenv("BEARER_TOKEN"))
 	return &client
 }
 

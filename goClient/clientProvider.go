@@ -1,6 +1,7 @@
 package main
 
 import (
+	"contentWorkflow/cdsClient"
 	"contentWorkflow/gatewayClient"
 	"fmt"
 	"os"
@@ -18,8 +19,7 @@ func (clientProvider ClientProvider) GetClient() (ContentClient, error) {
 	case gateway:
 		return gatewayClient.NewGatewayClient(os.Getenv("PROJECT_ID")), nil
 	case cds:
-		fmt.Println("HELLO")
-		return nil, nil
+		return cdsClient.NewCdsClient(os.Getenv("PROJECT_ID")), nil
 	default:
 		return nil, fmt.Errorf("Client type is not provided")
 	}
