@@ -16,9 +16,10 @@ import (
 	"github.com/google/uuid"
 )
 
-const (
-	stagingBaseUrl string = "https://staging.services.unity.com/api/ccd/management/v1/"
-)
+var baseUrls map[string]string = map[string]string{
+	"staging": "https://staging.services.unity.com/api/ccd/management/v1/",
+	"dev":     "localhost:9000/api/ccd/management/v1/",
+}
 
 type GatewayClient struct {
 	baseUrl   string
@@ -31,7 +32,7 @@ func NewGatewayClient(projectId string) *GatewayClient {
 	base := baseClient.NewBaseClient()
 	client := GatewayClient{
 		BaseClient: base,
-		baseUrl:    stagingBaseUrl,
+		baseUrl:    baseUrls[os.Getenv("ENV")],
 		projectId:  projectId,
 	}
 	client.SetAuth("Bearer", os.Getenv("BEARER_TOKEN"))
@@ -53,7 +54,7 @@ func (gatewayClient *GatewayClient) CreateBucket() (string, error) {
 
 	log.Printf("GATEWAY BUCKET CREATION MARSHALLED PAYLOAD\n%s\n\n", string(marshalledPayload))
 
-	request, err := http.NewRequest("POST", fmt.Sprintf("%sprojects/%s/buckets", stagingBaseUrl, gatewayClient.projectId), bytes.NewBuffer(marshalledPayload))
+	request, err := http.NewRequest("POST", fmt.Sprintf("%sprojects/%s/buckets", gatewayClient.baseUrl, gatewayClient.projectId), bytes.NewBuffer(marshalledPayload))
 	request.Header.Set("Content-Type", "application/json")
 	request.Header.Set("Authorization", gatewayClient.Auth)
 
@@ -105,7 +106,7 @@ func (gatewayClient *GatewayClient) CreateEntry(bucketId string, content *utils.
 
 	log.Printf("ENTRY CREATION MARSHALLED PAYLOAD\n%s\n\n", string(marshalledPayload))
 
-	request, err := http.NewRequest("POST", fmt.Sprintf("%sprojects/%s/buckets/%s/entries", stagingBaseUrl, gatewayClient.projectId, bucketId), bytes.NewBuffer(marshalledPayload))
+	request, err := http.NewRequest("POST", fmt.Sprintf("%sprojects/%s/buckets/%s/entries", gatewayClient.baseUrl, gatewayClient.projectId, bucketId), bytes.NewBuffer(marshalledPayload))
 	request.Header.Set("Content-Type", "application/json")
 	request.Header.Set("Authorization", gatewayClient.Auth)
 
@@ -140,7 +141,7 @@ func (gatewayClient *GatewayClient) CreateEntry(bucketId string, content *utils.
 	return unmarshalledResponseBody["entryid"].(string), nil
 }
 func (gatewayClient *GatewayClient) UploadContent(bucketId string, entryId string, content *utils.Content) {
-	request, err := http.NewRequest("PATCH", fmt.Sprintf("%sprojects/%s/buckets/%s/entries/%s/content", stagingBaseUrl, gatewayClient.projectId, bucketId, entryId), bytes.NewBuffer(content.Bytes))
+	request, err := http.NewRequest("PATCH", fmt.Sprintf("%sprojects/%s/buckets/%s/entries/%s/content", gatewayClient.baseUrl, gatewayClient.projectId, bucketId, entryId), bytes.NewBuffer(content.Bytes))
 	request.Header.Set("Content-Type", "application/offset+octet-stream")
 	request.Header.Set("Content-Length", strconv.FormatInt(int64(content.Size), 10))
 	request.Header.Set("Authorization", gatewayClient.Auth)
@@ -161,6 +162,19 @@ func (gatewayClient *GatewayClient) UploadContent(bucketId string, entryId strin
 	log.Printf("CONTENT UPLOAD RESPONSE STATUS\n%v\n\n", response.Status)
 }
 
-func (gatewayClient *GatewayClient) DeleteBucket(bucketId string) error {
-	return nil
+func (gatewayClient *GatewayClient) DeleteBucket(bucketId string) {
+	request, err := http.NewRequest("DELETE", fmt.Sprintf("%sprojects/%s/buckets/%s", gatewayClient.baseUrl, gatewayClient.projectId, bucketId), nil)
+	request.Header.Set("Authorization", gatewayClient.Auth)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	response, err := gatewayClient.Do(request)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	defer response.Body.Close()
+
+	log.Printf("BUCKET DELETE RESPONSE STATUS\n%v\n\n", response.Status)
 }

@@ -41,4 +41,6 @@ func main() {
 	}
 
 	contentClient.UploadContent(bucketId, entryId, content)
+
+	contentClient.DeleteBucket(bucketId)
 }
