@@ -166,6 +166,27 @@ func (cdsClient *CdsClient) UploadContent(bucketId string, entryId string, conte
 	log.Printf("CONTENT UPLOAD RESPONSE STATUS\n%v\n\n", response.Status)
 }
 
+func (cdsClient *CdsClient) CreateRelease(bucketId string) string {
+	body, _ := json.Marshal(map[string]interface{}{})
+	request, err := http.NewRequest("PATCH", fmt.Sprintf("%s/buckets/%s/releases/", cdsClient.baseUrl, bucketId), bytes.NewBuffer(body))
+	request.Header.Set("Authorization", cdsClient.Auth)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	log.Printf("CDS CREATE RELEASE HEADERS\n%v\n\n", request.Header)
+
+	response, err := cdsClient.Do(request)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	defer response.Body.Close()
+
+	log.Printf("CREATE RELEASE RESPONSE STATUS\n%v\n\n", response.Status)
+	return ""
+}
+
 func (cdsClient *CdsClient) DeleteBucket(bucketId string) {
 	request, err := http.NewRequest("DELETE", fmt.Sprintf("%s/buckets/%s/", cdsClient.baseUrl, bucketId), nil)
 	request.Header.Set("Authorization", cdsClient.Auth)

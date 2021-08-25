@@ -162,6 +162,40 @@ func (gatewayClient *GatewayClient) UploadContent(bucketId string, entryId strin
 	log.Printf("CONTENT UPLOAD RESPONSE STATUS\n%v\n\n", response.Status)
 }
 
+func (gatewayClient *GatewayClient) CreateRelease(bucketId string) string {
+	body, _ := json.Marshal(map[string]interface{}{})
+	request, err := http.NewRequest("POST", fmt.Sprintf("%sprojects/%s/buckets/%s/releases", gatewayClient.baseUrl, gatewayClient.projectId, bucketId), bytes.NewBuffer(body))
+	request.Header.Set("Authorization", gatewayClient.Auth)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	log.Printf("GATEWAY CREATE RELEASE URL\n%v\n\n", request.URL)
+	log.Printf("GATEWAY CREATE RELEASE HEADERS\n%v\n\n", request.Header)
+
+	response, err := gatewayClient.Do(request)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	defer response.Body.Close()
+
+	log.Printf("CREATE RELEASE RESPONSE STATUS\n%v\n\n", response.Status)
+
+	responseBody, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	var unmarshalledResponseBody map[string]interface{}
+
+	err = json.Unmarshal(responseBody, &unmarshalledResponseBody)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	log.Printf("CREATE RELEASE RESPONSE BODY\n%v\n\n", unmarshalledResponseBody)
+	return unmarshalledResponseBody["releaseid"].(string)
+}
+
 func (gatewayClient *GatewayClient) DeleteBucket(bucketId string) {
 	request, err := http.NewRequest("DELETE", fmt.Sprintf("%sprojects/%s/buckets/%s", gatewayClient.baseUrl, gatewayClient.projectId, bucketId), nil)
 	request.Header.Set("Authorization", gatewayClient.Auth)
