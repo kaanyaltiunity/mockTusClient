@@ -13,6 +13,7 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/eventials/go-tus"
 	"github.com/google/uuid"
 )
 
@@ -141,7 +142,22 @@ func (gatewayClient *GatewayClient) CreateEntry(bucketId string, content *utils.
 	return unmarshalledResponseBody["entryid"].(string), nil
 }
 func (gatewayClient *GatewayClient) UploadContent(bucketId string, entryId string, content *utils.Content) {
-	request, err := http.NewRequest("PATCH", fmt.Sprintf("%sprojects/%s/buckets/%s/entries/%s/content", gatewayClient.baseUrl, gatewayClient.projectId, bucketId, entryId), bytes.NewBuffer(content.Bytes))
+	path := fmt.Sprintf("%sprojects/%s/buckets/%s/entries/%s/content", gatewayClient.baseUrl, gatewayClient.projectId, bucketId, entryId)
+
+	goTusEnabled, err := strconv.ParseBool(os.Getenv("GO_TUS_ENABLED"))
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	if goTusEnabled {
+		gatewayClient.uploadWithGoTus(path, content)
+	} else {
+		gatewayClient.uploadWithHttp(path, content)
+	}
+}
+
+func (gatewayClient *GatewayClient) uploadWithHttp(path string, content *utils.Content) {
+	request, err := http.NewRequest("PATCH", path, bytes.NewBuffer(content.Bytes))
 	request.Header.Set("Content-Type", "application/offset+octet-stream")
 	request.Header.Set("Content-Length", strconv.FormatInt(int64(content.Size), 10))
 	request.Header.Set("Authorization", gatewayClient.Auth)
@@ -160,6 +176,34 @@ func (gatewayClient *GatewayClient) UploadContent(bucketId string, entryId strin
 	defer response.Body.Close()
 
 	log.Printf("CONTENT UPLOAD RESPONSE STATUS\n%v\n\n", response.Status)
+}
+
+func (gatewayClient *GatewayClient) uploadWithGoTus(path string, content *utils.Content) {
+	fmt.Println("UPLOADING WITH GO TUS\n")
+
+	tusConfig := tus.Config{
+		Header: http.Header{
+			"Authorization": []string{gatewayClient.Auth},
+		},
+		ChunkSize: 5,
+	}
+
+	client, err := tus.NewClient(path, &tusConfig)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	upload := tus.NewUploadFromBytes(content.Bytes)
+
+	uploader, err := client.CreateUpload(upload)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	err = uploader.Upload()
+	if err != nil {
+		log.Fatalln(err)
+	}
 }
 
 func (gatewayClient *GatewayClient) CreateRelease(bucketId string) string {
