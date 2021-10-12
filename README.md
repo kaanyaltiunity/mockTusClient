@@ -30,3 +30,5 @@ GO_TUS_ENABLED=false
 `GO_TUS_ENABLED` toggles tus client on and off.
 
 When tus uploads are enabled you may want to change the chunk size of each upload. In order to do so please look at the `uploadWithGoTus` function in both the gateway and the cds clients
+
+In order to change the generated content size please look at the `utils.GenerateRandomContent(0)` function call in `main.go`
