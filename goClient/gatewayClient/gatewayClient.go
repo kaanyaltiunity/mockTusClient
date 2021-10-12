@@ -89,7 +89,7 @@ func (gatewayClient *GatewayClient) CreateBucket() (string, error) {
 
 	return unmarshalledResponseBody["id"].(string), nil
 }
-func (gatewayClient *GatewayClient) CreateEntry(bucketId string, content *utils.Content) (string, error) {
+func (gatewayClient *GatewayClient) CreateEntry(bucketId string, content *utils.Content) (string, string, error) {
 	contentPath := fmt.Sprintf("test_entry_%s", utils.RandomString(10))
 	log.Printf("CONTENT PATH\n%s\n\n", contentPath)
 
@@ -139,7 +139,7 @@ func (gatewayClient *GatewayClient) CreateEntry(bucketId string, content *utils.
 	log.Printf("ENTRY CREATION RESPONSE BODY\n%v\n\n", unmarshalledResponseBody)
 	log.Printf("ENTRY CREATION ENTRY ID\n%v\n\n", unmarshalledResponseBody["entryid"])
 
-	return unmarshalledResponseBody["entryid"].(string), nil
+	return unmarshalledResponseBody["entryid"].(string), unmarshalledResponseBody["current_versionid"].(string), nil
 }
 func (gatewayClient *GatewayClient) UploadContent(bucketId string, entryId string, content *utils.Content) {
 	path := fmt.Sprintf("%sprojects/%s/buckets/%s/entries/%s/content", gatewayClient.baseUrl, gatewayClient.projectId, bucketId, entryId)

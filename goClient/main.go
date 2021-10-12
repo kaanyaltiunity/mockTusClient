@@ -1,6 +1,7 @@
 package main
 
 import (
+	"contentWorkflow/clientApi"
 	"contentWorkflow/utils"
 	"log"
 
@@ -29,19 +30,20 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	content, err := utils.GenerateRandomContent(100)
+	content, err := utils.GenerateRandomContent(0)
 	if err != nil {
 		log.Fatalln(err)
 	}
 	log.Printf("RANDOM GENERATED CONTENT\n%v\n\n", content)
 
-	entryId, err := contentClient.CreateEntry(bucketId, content)
+	entryId, versionId, err := contentClient.CreateEntry(bucketId, content)
 	if err != nil {
 		log.Fatalln(err)
 	}
 
 	contentClient.UploadContent(bucketId, entryId, content)
-
-	contentClient.CreateRelease(bucketId)
+	clientClient := clientApi.NewClientClient()
+	clientClient.DownloadEntry(bucketId, entryId, versionId)
+	// contentClient.CreateRelease(bucketId)
 	// contentClient.DeleteBucket(bucketId)
 }
