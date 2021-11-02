@@ -217,14 +217,14 @@ func (cdsClient *CdsClient) uploadWithGoTus(path string, content *utils.Content)
 
 func (cdsClient *CdsClient) CreateRelease(bucketId string) string {
 	body, _ := json.Marshal(map[string]interface{}{})
-	request, err := http.NewRequest("PATCH", fmt.Sprintf("%s/buckets/%s/releases/", cdsClient.baseUrl, bucketId), bytes.NewBuffer(body))
+	request, err := http.NewRequest("POST", fmt.Sprintf("%sbuckets/%s/releases/", cdsClient.baseUrl, bucketId), bytes.NewBuffer(body))
 	request.Header.Set("Authorization", cdsClient.Auth)
 	if err != nil {
 		log.Fatalln(err)
 	}
 
 	log.Printf("CDS CREATE RELEASE HEADERS\n%v\n\n", request.Header)
-
+	log.Printf("CDS CREATE RELEASE URL\n%v\n\n", request.URL)
 	response, err := cdsClient.Do(request)
 	if err != nil {
 		log.Fatalln(err)
