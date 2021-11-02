@@ -43,7 +43,7 @@ func main() {
 
 	contentClient.UploadContent(bucketId, entryId, content)
 	clientClient := clientApi.NewClientClient()
+	contentClient.CreateRelease(bucketId)
 	clientClient.DownloadEntry(bucketId, entryId, versionId)
-	// contentClient.CreateRelease(bucketId)
 	// contentClient.DeleteBucket(bucketId)
 }
